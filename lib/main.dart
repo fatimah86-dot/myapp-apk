@@ -53,7 +53,7 @@ Teks:
     if(keyC.text.trim().length<10){ ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text("Isi API Key aistudio.google.com dulu!"))); return; }
     setState((){ load=true; gundul="Memproses kitab..."; harakat=""; latin=""; terj=""; syarah=""; });
     try{
-      final model=GenerativeModel(model:'gemini-1.5-flash', apiKey:keyC.text.trim());
+      final model=GenerativeModel(model:'gemini-2.5-flash', apiKey:keyC.text.trim());
       GenerateContentResponse res;
       if(teksManual!=null){
         res=await model.generateContent([Content.text(promptTeks+teksManual)]);
