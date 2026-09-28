@@ -51,7 +51,7 @@ FORMAT OUTPUT WAJIB PERSIS SEPERTI INI:
     if(p==null) return;
     setState((){ img = File(p.path); load = true; arabGundul="Membaca..."; arabHarakat=""; latin=""; terj=""; syarah=""; });
     try{
-      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: keyC.text.trim());
+      final model = GenerativeModel(model: 'gemini-2.0-flash', apiKey: keyC.text.trim());
       final b = await img!.readAsBytes();
       final res = await model.generateContent([Content.multi([TextPart(prompt), DataPart('image/jpeg', b)])]);
       final full = res.text?? "";
