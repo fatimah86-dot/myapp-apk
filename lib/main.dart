@@ -16,7 +16,18 @@ class _ArabAppState extends State<ArabApp> with SingleTickerProviderStateMixin {
   List<String> history=[]; late TabController tabC;
 
   @override void initState(){ super.initState(); tabC=TabController(length:2, vsync:this); loadHist(); }
-  Future<void> loadHist() async { final p=await SharedPreferences.getInstance(); setState(()=>history=p.getStringList('hist')??[]); }
+
+  Future<void> loadHist() async {
+    final p=await SharedPreferences.getInstance();
+    setState((){
+      history=p.getStringList('hist')??[];
+      keyC.text=p.getString('api_key')??"";
+    });
+    keyC.addListener(() async {
+      final prefs=await SharedPreferences.getInstance();
+      prefs.setString('api_key', keyC.text);
+    });
+  }
   Future<void> saveHist(String t) async { final p=await SharedPreferences.getInstance(); history.insert(0, t.substring(0, t.length>50?50:t.length)); if(history.length>20) history=history.sublist(0,20); await p.setStringList('hist', history); setState((){}); }
 
   final promptGambar="""
@@ -42,7 +53,7 @@ Teks:
     if(keyC.text.trim().length<10){ ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text("Isi API Key aistudio.google.com dulu!"))); return; }
     setState((){ load=true; gundul="Memproses kitab..."; harakat=""; latin=""; terj=""; syarah=""; });
     try{
-      final model=GenerativeModel(model:'gemini-2.0-flash', apiKey:keyC.text.trim());
+      final model=GenerativeModel(model:'gemini-1.5-flash', apiKey:keyC.text.trim());
       GenerateContentResponse res;
       if(teksManual!=null){
         res=await model.generateContent([Content.text(promptTeks+teksManual)]);
@@ -68,7 +79,7 @@ Teks:
     return Container(width:double.infinity, margin:EdgeInsets.only(bottom:10), padding:EdgeInsets.all(12), decoration:BoxDecoration(color:c, borderRadius:BorderRadius.circular(12), border:Border.all(color:Colors.black12)),
       child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
         Row(children:[Expanded(child:Text(t, style:TextStyle(fontWeight:FontWeight.bold, fontSize:12))), IconButton(icon:Icon(Icons.copy, size:18), onPressed:(){ Clipboard.setData(ClipboardData(text:isi)); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text("$t di-copy!"))); }, tooltip:"Copy")]),
-        SelectableText(isi, textAlign:a, style:TextStyle(fontSize:t.contains("ARAB")?fontArab:fs, height:1.7, fontFamily:t.contains("ARAB")?"Amiri":null))
+        SelectableText(isi, textAlign:a, style:TextStyle(fontSize:t.contains("ARAB")?fontArab:fs, height:1.7))
       ]));
   }
 
@@ -80,7 +91,7 @@ Teks:
     );
   }
   Widget _buildFoto()=>ListView(padding:EdgeInsets.all(14), children:[
-    TextField(controller:keyC, obscureText:true, decoration:InputDecoration(labelText:"API Key Gemini (aistudio.google.com)", border:OutlineInputBorder(), prefixIcon:Icon(Icons.key))),
+    TextField(controller:keyC, obscureText:true, decoration:InputDecoration(labelText:"API Key Gemini (aistudio.google.com) - auto save", border:OutlineInputBorder(), prefixIcon:Icon(Icons.key))),
     SizedBox(height:12),
     Wrap(spacing:8, runSpacing:8, children:[
       ElevatedButton.icon(onPressed:()=>pick(ImageSource.gallery), icon:Icon(Icons.photo), label:Text("Galeri")),
@@ -105,24 +116,16 @@ Teks:
     SizedBox(height:10),
     ElevatedButton.icon(onPressed:load?null:(){ if(ketikC.text.trim().isEmpty) return; proses(teksManual:ketikC.text.trim()); }, icon:Icon(Icons.auto_fix_high), label:Text("Proses Harokat + Latin + Terjemah")),
     if(load) Padding(padding:EdgeInsets.all(20), child:Center(child:CircularProgressIndicator())),
-    if(!load && gundul.isNotEmpty && tabC.index==1)...[
-      SizedBox(height:12),
-      box("1. TEKS ARAB ASLI (GUNDUL)", gundul, Color(0xFFFFF8E1), a:TextAlign.right),
-      box("2. TEKS ARAB BERHAROKAT", harakat, Color(0xFFE8F5E9), a:TextAlign.right),
-      box("3. LATIN ARAB", latin, Color(0xFFE3F2FD)),
-      box("4. TERJEMAHAN PESANTREN", terj, Colors.white),
-    ]
   ]);
   Widget _buildHistory()=>ListView(padding:EdgeInsets.all(14), children:[
     Text("History Terjemahan", style:TextStyle(fontWeight:FontWeight.bold, fontSize:18)),
     if(history.isEmpty) Padding(padding:EdgeInsets.only(top:20), child:Text("Belum ada history")),
-   ...history.map((h)=>Card(child:ListTile(title:Text(h, maxLines:2, overflow:TextOverflow.ellipsis, textAlign:TextAlign.right), trailing:IconButton(icon:Icon(Icons.copy), onPressed:(){ ketikC.text=h; setState(()=>tab=0); tabC.animateTo(1); }))))
+  ...history.map((h)=>Card(child:ListTile(title:Text(h, maxLines:2, overflow:TextOverflow.ellipsis, textAlign:TextAlign.right), trailing:IconButton(icon:Icon(Icons.copy), onPressed:(){ ketikC.text=h; setState(()=>tab=0); tabC.animateTo(1); }))))
   ]);
   Widget _buildSetting()=>ListView(padding:EdgeInsets.all(20), children:[
     Text("Atur Tampilan", style:TextStyle(fontWeight:FontWeight.bold, fontSize:18)),
     SizedBox(height:10),
     Text("Ukuran Huruf Arab: ${fontArab.toInt()}"),
     Slider(value:fontArab, min:18, max:36, onChanged:(v)=>setState(()=>fontArab=v)),
-    ListTile(leading:Icon(Icons.text_fields), title:Text("Preview Arab"), subtitle:Text("بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ", textAlign:TextAlign.right, style:TextStyle(fontSize:fontArab))),
   ]);
 }
